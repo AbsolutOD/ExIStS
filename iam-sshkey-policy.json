@@ -19,7 +19,7 @@
                 "iam:ListSSHPublicKeys"
             ],
             "Resource": [
-                "arn:aws:iam::555828001259:user/*"
+                "arn:aws:iam::{$ACCTNUM}:user/*"
             ]
         }
     ]
