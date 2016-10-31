@@ -5,7 +5,8 @@ import json
 
 import boto3
 
-IGNORE_USERS = ["ec2-user"]
+# setting up ignoring of root and distro specific sudo users
+IGNORE_USERS = ["root", "ec2-user", "ubuntu"]
 
 
 
@@ -116,9 +117,10 @@ def get_sshkeys(user):
 
 def get_iam_users():
     iam = boto3.resource('iam')
+    group = iam.Group('ec2-user')
 
     iam_users = {}
-    for user in iam.users.all():
+    for user in group.users.all():
         print "Name: {}".format(user.name)
         print "  -> Groups"
 
