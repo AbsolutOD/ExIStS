@@ -2,6 +2,7 @@
 
 import os
 import json
+import argparse
 
 import boto3
 
@@ -9,11 +10,15 @@ import boto3
 IGNORE_USERS = ["root", "ec2-user", "ubuntu"]
 
 
+parser = argparse.ArgumentParser(description="Syncs local users with IAM users.")
+parser.add_argument("-d", "--dryrun", action='store_true', help="Just print the commands")
+args = parser.parse_args()
+
 
 def create_ssh_dir(username):
     if not os.path.isdir(ssh_dir_path(username)):
         cmd = "mkdir {}".format(ssh_dir_path(username))
-        #os.system(cmd)
+        if not args.dryrun: os.system(cmd)
         print cmd
     return ssh_dir_path(username)
 
@@ -45,7 +50,7 @@ def add_user(username, sshkeys):
     if not has_home_dir(username):
         cmd = "useradd -s /bin/bash -d /home/{0} -m {0}".format(username)
         print cmd
-        #os.system(cmd)
+        if not args.dryrun: os.system(cmd)
 
     add_sshkeys(username, sshkeys)
     return True
@@ -56,13 +61,14 @@ def add_sshkeys(username, sshkeys):
     
     if has_key_file(username):
         cmd = "rm {}".format(key_file_path(username))
-        #os.system(cmd)
-        print cmd
+        if not args.dryrun: os.system(cmd)
+        #print cmd
 
-    #with open(key_file_path(username), 'w') as f:
-    for k in sshkeys:
-        #f.write(k)
-        print "    * {}".format(k)
+    if not args.dryrun:
+        with open(key_file_path(username), 'w') as f:
+            #print "    * adding {} ".format(str(len((sshkeys))))
+            for k in sshkeys:
+                f.write(k)
     return True
 
 
@@ -73,11 +79,12 @@ def add_sshkeys(username, sshkeys):
 def remove_users(remove_users):
     for username in remove_users:
         if username in IGNORE_USERS: continue
+        print "Removing {}".format(username)
         if has_key_file(username):
             cmd = "rm {}".format(key_file_path(username))
-            #os.system(cmd)
-            print cmd
-            os.system("userdel {}".format(username))
+            if not args.dryrun:
+                os.system(cmd)
+                os.system("userdel {}".format(username))
 
 
 ## We don't use password auth, so we just get the list of homedirs.
@@ -88,14 +95,6 @@ def get_system_usernames():
         if has_key_file(homedir):
             sys_users.append(homedir)
     return sys_users
-
-
-def get_groups(user):
-    groups = []
-    for group in user.groups.all():
-        print "     * {}".format(group.name)
-        groups.append(group.name)
-    return groups
 
 
 def get_sshkeys(user):
@@ -111,7 +110,8 @@ def get_sshkeys(user):
                         Encoding='SSH'
                     )
         sshkeys.append(pub_key['SSHPublicKey']['SSHPublicKeyBody'])
-        print "     * {}".format(pub_key['SSHPublicKey']['SSHPublicKeyBody'])
+        #print "     * {}".format(pub_key['SSHPublicKey']['SSHPublicKeyBody'])
+    print "    * has {} keys".format(str(len((sshkeys))))
     return sshkeys
 
 
@@ -122,13 +122,10 @@ def get_iam_users():
     iam_users = {}
     for user in group.users.all():
         print "Name: {}".format(user.name)
-        print "  -> Groups"
-
-        groups = get_groups(user)
         sshkeys = get_sshkeys(user)
 
         iam_users[user.name] = {
-            "groups" : groups,
+            #"groups" : groups,
             "sshkeys" : sshkeys
         }
 
@@ -144,3 +141,4 @@ if __name__ == "__main__":
 
     add_users(iam_users)
     remove_users(users_to_remove)
+
