@@ -50,7 +50,9 @@ def add_user(username, sshkeys):
     if not has_home_dir(username):
         cmd = "useradd -s /bin/bash -d /home/{0} -m {0}".format(username)
         print cmd
-        if not args.dryrun: os.system(cmd)
+        if not args.dryrun:
+            os.system(cmd)
+            os.system("usermod -a -G admins {0}".format(username))
 
     add_sshkeys(username, sshkeys)
     return True
@@ -103,7 +105,6 @@ def get_sshkeys(user):
     sshkeys = []
     keys = client.list_ssh_public_keys(UserName=user.name)
     for key in keys['SSHPublicKeys']:
-        key_id = key
         pub_key = client.get_ssh_public_key(
                         UserName=user.name,
                         SSHPublicKeyId=key['SSHPublicKeyId'],
