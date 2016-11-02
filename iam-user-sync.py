@@ -94,7 +94,7 @@ def add_sshkeys(username, sshkeys):
         with open(key_file_path(username), 'w') as f:
             for k in sshkeys:
                 f.write(k)
-        change_owner_and_perms(key_file)
+        change_owner_and_perms(username, key_file)
 
     return True
 
