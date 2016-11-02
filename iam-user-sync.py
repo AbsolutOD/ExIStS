@@ -16,13 +16,37 @@ args = parser.parse_args()
 
 
 def create_ssh_dir(username):
-    if not os.path.isdir(ssh_dir_path(username)):
-        cmd = "mkdir {}".format(ssh_dir_path(username))
-        if not args.dryrun: os.system(cmd)
+    ssh_dir   = ssh_dir_path(username)
+    if not os.path.isdir(ssh_dir):
+        cmd = "mkdir {0}".format(ssh_dir)
+        if not args.dryrun:
+            os.system(cmd)
+            change_owner_and_perms(username, ssh_dir)
         print cmd
-    return ssh_dir_path(username)
+    return ssh_dir
 
-    return
+
+def change_owner_and_perms(username, path):
+    chg_owner = "chown {0}:{0} {1}".format(username, path)
+    if not args.dryrun: os.system(chg_owner)
+
+    change_perms(path)
+    return path
+
+
+def change_perms(path):
+    if os.path.isdir(path):
+        chg_perms = "chmod 700 {0}".format(path)
+    elif os.path.isfile(path):
+        chg_perms = "chmod 600 {0}".format(path)
+    else:
+        chg_perms = False
+    
+    if not args.dryrun and chg_perms: os.system(cmd)
+    
+    return True
+
+
 ## The existance of an authorized_keys file means they are active
 def has_key_file(username):
     return os.path.isfile(key_file_path(username))
@@ -60,17 +84,18 @@ def add_user(username, sshkeys):
 
 def add_sshkeys(username, sshkeys):
     create_ssh_dir(username)
+    key_file = key_file_path(username)
     
     if has_key_file(username):
-        cmd = "rm {}".format(key_file_path(username))
+        cmd = "rm {}".format(key_file)
         if not args.dryrun: os.system(cmd)
-        #print cmd
 
     if not args.dryrun:
         with open(key_file_path(username), 'w') as f:
-            #print "    * adding {} ".format(str(len((sshkeys))))
             for k in sshkeys:
                 f.write(k)
+        change_owner_and_perms(key_file)
+
     return True
 
 
