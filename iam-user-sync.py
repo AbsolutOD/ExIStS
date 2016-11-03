@@ -42,7 +42,7 @@ def change_perms(path):
     else:
         chg_perms = False
     
-    if not args.dryrun and chg_perms: os.system(cmd)
+    if not args.dryrun and chg_perms: os.system(chg_perms)
     
     return True
 
